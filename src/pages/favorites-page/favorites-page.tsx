@@ -7,19 +7,19 @@ type FavoritesPageProps = {
 };
 
 function FavoritesPage({ offers }: FavoritesPageProps): JSX.Element {
-  const groupedOffers = useMemo(
-    () =>
-      offers.reduce((acc, offer) => {
-        if (!acc[offer.city.name]) {
-          acc[offer.city.name] = [];
-        }
+  const groupedOffers = useMemo(() => {
+    const result = {} as Record<string, TOffer[]>;
+    offers.forEach((offer) => {
+      const city = offer.city.name;
 
-        acc[offer.city.name].push(offer);
+      if (!result[city]) {
+        result[city] = [];
+      }
 
-        return acc;
-      }, {} as Record<string, TOffer[]>),
-    [offers]
-  );
+      result[city].push(offer);
+    });
+    return result;
+  }, [offers]);
 
   return (
     <div className="page">
