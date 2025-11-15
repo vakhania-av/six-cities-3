@@ -9,7 +9,7 @@ import { State } from '../../types/state';
 import { fetchOfferById, fetchOffersNearby } from '../../store/api-actions';
 import { store } from '../../store';
 import { Spinner } from '../../components/spinner/spinner';
-import { NotFoundPage } from '../404-page/404-page';
+import { NotFoundPage } from '../not-found-page/not-found-page';
 import { AuthorizationStatus } from '../../constants';
 
 type OfferPageParams = { id: string };
