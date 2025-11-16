@@ -2,28 +2,50 @@ import { ReviewForm } from '../../components/review-form';
 import { ReviewsList } from '../../components/reviews-list';
 import Map from '../../components/map';
 import { OffersList } from '../../components/offers-list';
-import { useParams } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { State } from '../../types/state';
 import { favoritesActions, offerDetailsActions, offersActions } from '../../store';
 import { store } from '../../store';
 import { Spinner } from '../../components/spinner';
 import { NotFoundPage } from '../not-found-page';
-import { AuthorizationStatus } from '../../constants';
+import { AppRoute, AuthorizationStatus, MAX_OFFERS_IMAGES_COUNT, MAX_OFFERS_NEARBY_COUNT } from '../../constants';
+import classNames from 'classnames';
 
 type OfferPageParams = { id: string };
 
 function OfferPage(): JSX.Element {
+  const navigate = useNavigate();
   const { id } = useParams<OfferPageParams>();
+
   const authorizationStatus = useSelector((state: State) => state.auth.status);
+
   const offer = useSelector((state: State) => state.offerDetails.current);
+
   const offerLoading = useSelector(
     (state: State) => state.offerDetails.currentLoading
   );
+
   const offersNearby = useSelector((state: State) => state.offers.nearby);
+
+  const offersNearbyToShow = useMemo(
+    () => offersNearby.slice(0, MAX_OFFERS_NEARBY_COUNT),
+    [offersNearby]
+  );
+
+  const offersOnMap = useMemo(
+    () => (offer ? [offer, ...offersNearbyToShow] : offersNearbyToShow),
+    [offer, offersNearbyToShow]
+  );
+
   const offersNearbyLoading = useSelector(
     (state: State) => state.offers.nearbyLoading
+  );
+
+  const imagesToShow = useMemo(
+    () => offer?.images.slice(0, MAX_OFFERS_IMAGES_COUNT) ?? [],
+    [offer?.images]
   );
 
   useEffect(() => {
@@ -43,7 +65,12 @@ function OfferPage(): JSX.Element {
     return <NotFoundPage />;
   }
 
+  const isFavorite = authorizationStatus === AuthorizationStatus.Auth && offer.isFavorite;
+
   const handleBookmarkClick = () => {
+    if (authorizationStatus !== AuthorizationStatus.Auth) {
+      navigate(AppRoute.Login);
+    }
     store.dispatch(
       favoritesActions.setStatus({
         offerId: offer.id,
@@ -58,7 +85,7 @@ function OfferPage(): JSX.Element {
         <section className="offer">
           <div className="offer__gallery-container container">
             <div className="offer__gallery">
-              {offer.images.map((image) => (
+              {imagesToShow.map((image) => (
                 <div
                   className="offer__image-wrapper"
                   key={`${offer.id}-${image}`}
@@ -74,35 +101,33 @@ function OfferPage(): JSX.Element {
           </div>
           <div className="offer__container container">
             <div className="offer__wrapper">
-              <div className="offer__mark">
-                <span>{offer.isPremium ? 'Premium' : ''}</span>
-              </div>
+              {offer.isPremium && (
+                <div className="offer__mark">
+                  <span>Premium</span>
+                </div>
+              )}
               <div className="offer__name-wrapper">
                 <h1 className="offer__name">{offer.title}</h1>
-                {authorizationStatus === AuthorizationStatus.Auth && (
-                  <button
-                    className={`offer__bookmark-button button ${
-                      offer.isFavorite ? 'offer__bookmark-button--active' : ''
-                    }`}
-                    type="button"
-                    onClick={handleBookmarkClick}
-                  >
-                    <svg
-                      className="offer__bookmark-icon"
-                      width={31}
-                      height={33}
-                    >
-                      <use xlinkHref="#icon-bookmark" />
-                    </svg>
-                    <span className="visually-hidden">
-                      {offer.isFavorite ? 'In bookmarks' : 'To bookmarks'}
-                    </span>
-                  </button>
-                )}
+                <button
+                  className={`offer__bookmark-button button ${
+                    isFavorite ? 'offer__bookmark-button--active' : ''
+                  }`}
+                  type="button"
+                  onClick={handleBookmarkClick}
+                >
+                  <svg className="offer__bookmark-icon" width={31} height={33}>
+                    <use xlinkHref="#icon-bookmark" />
+                  </svg>
+                  <span className="visually-hidden">
+                    {isFavorite ? 'In bookmarks' : 'To bookmarks'}
+                  </span>
+                </button>
               </div>
               <div className="offer__rating rating">
                 <div className="offer__stars rating__stars">
-                  <span style={{ width: `${offer.rating * 20}%` }} />
+                  <span
+                    style={{ width: `${Math.round(offer.rating) * 20}%` }}
+                  />
                   <span className="visually-hidden">Rating</span>
                 </div>
                 <span className="offer__rating-value rating__value">
@@ -130,7 +155,7 @@ function OfferPage(): JSX.Element {
               <div className="offer__inside">
                 <h2 className="offer__inside-title">What&apos;s inside</h2>
                 <ul className="offer__inside-list">
-                  {offer.goods.map((good) => (
+                  {offer.goods?.map((good) => (
                     <li className="offer__inside-item" key={good}>
                       {good}
                     </li>
@@ -140,7 +165,14 @@ function OfferPage(): JSX.Element {
               <div className="offer__host">
                 <h2 className="offer__host-title">Meet the host</h2>
                 <div className="offer__host-user user">
-                  <div className="offer__avatar-wrapper offer__avatar-wrapper--pro user__avatar-wrapper">
+                  <div
+                    className={classNames(
+                      'offer__avatar-wrapper user__avatar-wrapper',
+                      {
+                        'offer__avatar-wrapper--pro': offer.host.isPro,
+                      }
+                    )}
+                  >
                     <img
                       className="offer__avatar user__avatar"
                       src={offer.host.avatarUrl}
@@ -150,9 +182,9 @@ function OfferPage(): JSX.Element {
                     />
                   </div>
                   <span className="offer__user-name">{offer.host.name}</span>
-                  <span className="offer__user-status">
-                    {offer.host.isPro ? 'Pro' : ''}
-                  </span>
+                  {offer.host.isPro && (
+                    <span className="offer__user-status">Pro</span>
+                  )}
                 </div>
                 <div className="offer__description">
                   <p className="offer__text">{offer.description}</p>
@@ -168,7 +200,7 @@ function OfferPage(): JSX.Element {
           </div>
           <Map
             centerLocation={offer.location}
-            offers={offersNearby}
+            offers={offersOnMap}
             selectedOfferId={offer.id}
             className="offer__map"
           />
@@ -178,7 +210,7 @@ function OfferPage(): JSX.Element {
             <h2 className="near-places__title">
               Other places in the neighbourhood
             </h2>
-            <OffersList offers={offersNearby} viewMode="near-places" />
+            <OffersList offers={offersNearbyToShow} viewMode="near-places" />
           </section>
         </div>
       </main>

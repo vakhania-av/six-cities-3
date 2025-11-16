@@ -1,9 +1,10 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { TOffer } from '../../types/offer';
 import { favoritesActions, store } from '../../store';
-import { AuthorizationStatus } from '../../constants';
+import { AppRoute, AuthorizationStatus } from '../../constants';
 import { State } from '../../types/state';
 import { useSelector } from 'react-redux';
+import { CITIES_IMAGE_HEIGHT, CITIES_IMAGE_WIDTH, FAVORITES_IMAGE_HEIGHT, FAVORITES_IMAGE_WIDTH } from './constants';
 
 type PlaceCardProps = {
   offer: TOffer;
@@ -18,8 +19,13 @@ export function PlaceCard({
   onMouseLeave,
   viewMode = 'cities',
 }: PlaceCardProps): JSX.Element {
+  const navigate = useNavigate();
   const authorizationStatus = useSelector((state: State) => state.auth.status);
   const handleBookmarkClick = () => {
+    if (authorizationStatus !== AuthorizationStatus.Auth) {
+      navigate(AppRoute.Login);
+    }
+
     store.dispatch(
       favoritesActions.setStatus({
         offerId: offer.id,
@@ -27,6 +33,8 @@ export function PlaceCard({
       })
     );
   };
+  const isFavorite = authorizationStatus === AuthorizationStatus.Auth && offer.isFavorite;
+
   return (
     <article
       className={`place-card ${viewMode}__card`}
@@ -42,8 +50,16 @@ export function PlaceCard({
         <img
           className="place-card__image"
           src={offer.previewImage}
-          width={viewMode === 'favorites' ? 150 : 260}
-          height={viewMode === 'favorites' ? 110 : 200}
+          width={
+            viewMode === 'favorites'
+              ? FAVORITES_IMAGE_WIDTH
+              : CITIES_IMAGE_WIDTH
+          }
+          height={
+            viewMode === 'favorites'
+              ? FAVORITES_IMAGE_HEIGHT
+              : CITIES_IMAGE_HEIGHT
+          }
           alt="Place image"
         />
       </div>
@@ -57,31 +73,31 @@ export function PlaceCard({
             <b className="place-card__price-value">€{offer.price}</b>
             <span className="place-card__price-text">/&nbsp;night</span>
           </div>
-          {authorizationStatus === AuthorizationStatus.Auth && (
-            <button
-              className={`place-card__bookmark-button button ${
-                offer.isFavorite ? 'place-card__bookmark-button--active' : ''
-              }`}
-              type="button"
-              onClick={handleBookmarkClick}
-            >
-              <svg className="place-card__bookmark-icon" width={18} height={19}>
-                <use xlinkHref="#icon-bookmark" />
-              </svg>
-              <span className="visually-hidden">
-                {offer.isFavorite ? 'In bookmarks' : 'To bookmarks'}
-              </span>
-            </button>
-          )}
+          <button
+            className={`place-card__bookmark-button button ${
+              isFavorite ? 'place-card__bookmark-button--active' : ''
+            }`}
+            type="button"
+            onClick={handleBookmarkClick}
+          >
+            <svg className="place-card__bookmark-icon" width={18} height={19}>
+              <use xlinkHref="#icon-bookmark" />
+            </svg>
+            <span className="visually-hidden">
+              {isFavorite ? 'In bookmarks' : 'To bookmarks'}
+            </span>
+          </button>
         </div>
         <div className="place-card__rating rating">
           <div className="place-card__stars rating__stars">
-            <span style={{ width: `${offer.rating * 20}%` }} />
+            <span style={{ width: `${Math.round(offer.rating) * 20}%` }} />
             <span className="visually-hidden">Rating</span>
           </div>
         </div>
         <h2 className="place-card__name">
-          <Link to={`/offer/${offer.id}`}>{offer.title}</Link>
+          <Link to={AppRoute.Offer.replace(':id', offer.id)}>
+            {offer.title}
+          </Link>
         </h2>
         <p className="place-card__type" style={{ textTransform: 'capitalize' }}>
           {offer.type}

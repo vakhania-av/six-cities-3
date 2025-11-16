@@ -1,13 +1,17 @@
 import { useNavigate } from 'react-router-dom';
-import { AppRoute, AuthorizationStatus } from '../../constants';
-import { store, authActions } from '../../store';
+import { AppRoute, AuthorizationStatus, CITIES } from '../../constants';
+import { store, authActions, filtersActions } from '../../store';
 import { State } from '../../types/state';
 import { useSelector } from 'react-redux';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
 export function LoginPage(): JSX.Element {
   const navigate = useNavigate();
   const authorizationStatus = useSelector((state: State) => state.auth.status);
+  const randomCity = useMemo(
+    () => CITIES[Math.floor(Math.random() * CITIES.length)],
+    []
+  );
 
   useEffect(() => {
     if (authorizationStatus === AuthorizationStatus.Auth) {
@@ -15,13 +19,21 @@ export function LoginPage(): JSX.Element {
     }
   }, [authorizationStatus, navigate]);
 
+  const goToRandomCity = () => {
+    store.dispatch(filtersActions.changeCity(randomCity));
+    navigate(AppRoute.Root);
+  };
+
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
     const formData = new FormData(event.target as HTMLFormElement);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
+
     store.dispatch(authActions.login({ email, password }));
   };
+
   return (
     <div className="page">
       <main className="page__main page__main--login">
@@ -66,9 +78,15 @@ export function LoginPage(): JSX.Element {
           </section>
           <section className="locations locations--login locations--current">
             <div className="locations__item">
-              <a className="locations__item-link" href="#">
-                <span>Amsterdam</span>
-              </a>
+              <span
+                className="locations__item-link"
+                role="button"
+                tabIndex={0}
+                onClick={goToRandomCity}
+                data-testid="random-city-link"
+              >
+                <span>{randomCity}</span>
+              </span>
             </div>
           </section>
         </div>
