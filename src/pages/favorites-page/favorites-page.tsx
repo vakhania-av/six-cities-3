@@ -36,7 +36,7 @@ function FavoritesPage(): JSX.Element {
     return result;
   }, [favoritesList]);
 
-  if (!favoritesList?.length) {
+  if (favoritesList?.length === 0) {
     return (
       <div className="page__favorites-container container">
         <section className="favorites favorites--empty">

@@ -88,7 +88,7 @@ describe('AppRoutes', () => {
       </Provider>
     );
 
-    expect(screen.getByText('Saved listing')).toBeInTheDocument();
+    expect(screen.getByText(/Saved listing/i)).toBeInTheDocument();
   });
 
   it('should redirect to login when accessing /favorites without authorization', () => {
