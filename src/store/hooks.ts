@@ -19,18 +19,14 @@ const SORT_FUNCTIONS = {
 } as const;
 
 const useOffersList = () => {
-  const offers = useSelector((state: State) => state.offersList);
-  const city = useSelector((state: State) => state.city);
-  const sort = useSelector((state: State) => state.sort);
+  const offers = useSelector((state: State) => state.offers.list);
+  const city = useSelector((state: State) => state.filters.city);
+  const sort = useSelector((state: State) => state.filters.sort);
 
   return useMemo(() => {
     const unsortedOffers = offers.filter((offer) => offer.city.name === city);
 
-    if (sort === 'popular') {
-      return unsortedOffers;
-    }
-
-    return SORT_FUNCTIONS[sort](unsortedOffers);
+    return (sort === 'popular') ? unsortedOffers : SORT_FUNCTIONS[sort](unsortedOffers);
   }, [offers, city, sort]);
 };
 
