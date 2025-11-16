@@ -3,18 +3,24 @@ import { FavoritesLocation } from '../../components/favorites-location';
 import { TOffer } from '../../types/offer';
 import { useSelector } from 'react-redux';
 import { State } from '../../types/state';
-import { store, offersActions } from '../../store';
+import { store, favoritesActions } from '../../store';
 
 function FavoritesPage(): JSX.Element {
-  const offers = useSelector((state: State) => state.offers.list);
-
+  const favoritesList = useSelector((state: State) => state.favorites.list);
   useEffect(() => {
-    store.dispatch(offersActions.fetchList());
-  }, []);
+    if (favoritesList) {
+      return;
+    }
+
+    store.dispatch(favoritesActions.fetchList());
+  }, [favoritesList]);
 
   const groupedOffers = useMemo(() => {
+    if (!favoritesList) {
+      return {};
+    }
     const result = {} as Record<string, TOffer[]>;
-    offers.forEach((offer) => {
+    favoritesList.forEach((offer) => {
       const city = offer.city.name;
       if (!result[city]) {
         result[city] = [];
@@ -22,7 +28,7 @@ function FavoritesPage(): JSX.Element {
       result[city].push(offer);
     });
     return result;
-  }, [offers]);
+  }, [favoritesList]);
   return (
     <div className="page">
       <main className="page__main page__main--favorites">
